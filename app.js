@@ -1,26 +1,20 @@
 var express = require("express"),
     app = express(),
     bodyParser = require("body-parser"),
-    mongoose = require("mongoose");
+    mongoose = require("mongoose"),
+    Campground = require("./models/campground"),
+    seedDB = require('./seeds');
 
+seedDB();
 mongoose.connect("mongodb://localhost/yelp_camp")
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
-
-//  Schema setup
-
-var campgroundSchema = new mongoose.Schema({
-  name: String,
-  img: String
-});
-
-var Campground = mongoose.model("Campground", campgroundSchema);
-
 // Campground.create(
 //   {
 //     name: "Salmon Creek",
-//     img: "https://farm7.staticflickr.com/6085/6037590541_19248d41f0.jpg"
+//     image: "https://farm7.staticflickr.com/6085/6037590541_19248d41f0.jpg",
+//     description: "The very best Salmon you will ever find at a campground. The bears love it! And you will too."
 //   }, function(err, campg){
 //     if (err) {
 //       console.log("Error!!!!");
@@ -29,41 +23,34 @@ var Campground = mongoose.model("Campground", campgroundSchema);
 //       console.log("New created campground");
 //       console.log(campg);
 //     }
-//   })
-
-// var campgrounds = [
-//   { name: "Salmon Creek", img: "https://farm7.staticflickr.com/6085/6037590541_19248d41f0.jpg" },
-//   { name: "Granite Hill", img: "https://pixabay.com/get/ec31b90f2af61c22d2524518b7444795ea76e5d004b0144393f7c17aa2efb5_340.jpg" },
-//   { name: "Mountain Bear's Rest", img: "https://farm8.staticflickr.com/7268/7121859753_e7f787dc42.jpg" },
-//   { name: "Snow Hills", img: "https://farm8.staticflickr.com/7402/12934040253_63e555afa2.jpg" },
-//   { name: "Dark Horse", img: "https://farm8.staticflickr.com/7023/6439728971_eb870e486b.jpg" },
-//   { name: "Green Meadows", img: "https://farm4.staticflickr.com/3187/2671132585_898aa8c500.jpg" },
-//   { name: "High Point", img: "https://farm5.staticflickr.com/4376/36437924985_07bb927043.jpg" },
-//   { name: "Shade Gates", img: "http://www.nationalparks.nsw.gov.au/~/media/DF58734103EF43669F1005AF8B668209.ashx" },
-//   { name: "Leafy Salts", img: "http://www.travelbirbilling.com/wp-content/uploads/camp-pic1.jpg" },
-// ];
+// });
 
 app.get("/", function(req, res){
   res.render("landing")
 });
 
+// INDEX - Show all campgrounds
 app.get("/campgrounds", function(req, res){
   // Get all campgrounds from DB
   Campground.find({}, function(err, allCampgrounds){
     if (err) {
       console.log(err);
     } else {
-      res.render("campgrounds", {campgrounds: allCampgrounds})
+      res.render("index", {campgrounds: allCampgrounds})
+      console.log(allCampgrounds);
     }
   });
   // res.render("campgrounds", {campgrounds: campgrounds})
 });
 
+// CREATE - add new campground to DB
 app.post("/campgrounds", function(req, res){
+  // Get data from form and create an object with the data
   var name = req.body.name;
   var image = req.body.image;
-  var newCampground = {name: name, img: image};
-  // Create new campground and send to DB
+  var desc = req.body.description;
+  var newCampground = {name: name, image: image, description: desc};
+  // Create new campground from object and send to DB
   Campground.create(newCampground, function(err, newlyCreated){
     if (err) {
       console.log(err);
@@ -74,8 +61,21 @@ app.post("/campgrounds", function(req, res){
   });
 });
 
+// NEW - Show form to create new campground
 app.get("/campgrounds/new", function(req, res){
   res.render("new");
+});
+
+// SHOW - shows more information about one campground
+app.get("/campgrounds/:id", function(req, res){
+  // Render show template for campground
+  Campground.findById(req.params.id, function(err, foundCampground){
+    if (err) {
+      console.log(err);
+    } else {
+      res.render("show", {campground: foundCampground})
+    }
+  });
 });
 
 app.listen(3000, function(){
